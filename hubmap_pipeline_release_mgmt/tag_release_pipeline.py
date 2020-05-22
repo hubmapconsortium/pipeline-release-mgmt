@@ -100,6 +100,7 @@ def tag_release_pipeline(tag: str, sign: Union[object, str], pretend: bool = Fal
     git('tag', tag, *tag_extra_args)
     git('push')
     git('push', '--tags')
+    git('checkout', 'master')
 
 def main():
     p = ArgumentParser()
