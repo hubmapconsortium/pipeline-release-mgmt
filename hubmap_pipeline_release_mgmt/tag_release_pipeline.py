@@ -65,7 +65,7 @@ def tag_release_pipeline(tag: str, sign: Union[object, str], pretend: bool = Fal
             git('checkout', 'release')
             git('pull', '--ff-only')
         else:
-            git('checkout', '-b', 'release', 'origin', 'release')
+            git('checkout', '-b', 'release', 'origin/release')
     else:
         if 'release' in branches:
             git('checkout', 'release')
