@@ -48,7 +48,7 @@ def adjust_dockerfile_tags(tag_without_v: str, pretend: bool = False):
                     line = ': '.join(pieces)
             new_lines.append(line)
         if not pretend:
-            with open('cwl_file', 'w') as f:
+            with open(cwl_file, 'w') as f:
                 for line in new_lines:
                     print(line, file=f)
 
