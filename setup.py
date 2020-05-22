@@ -12,6 +12,7 @@ setup(
     version='0.1',
     description='Management scripts for releasing HuBMAP computational pipelines',
     long_description=long_description,
+    long_description_content_type='text/x-rst',
     url='https://github.com/hubmapconsortium/pipeline-release-mgmt',
     author='Matt Ruffalo',
     author_email='mruffalo@cs.cmu.edu',

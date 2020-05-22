@@ -1,5 +1,5 @@
-HuBMAP pipeline release managment
-=======================
+HuBMAP pipeline release management
+==================================
 
 Overview
 --------
