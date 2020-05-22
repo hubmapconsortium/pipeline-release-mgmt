@@ -45,10 +45,12 @@ def adjust_dockerfile_tags(tag_without_v: str, pretend: bool = False):
                 if image in labels:
                     print('Found managed Docker image', image, 'in', cwl_file)
                     pieces[1] = f'{image}:{tag_without_v}'
-                    line = ':'.join(pieces)
+                    line = ': '.join(pieces)
             new_lines.append(line)
         if not pretend:
-            cwl_file.write_text('\n'.join(new_lines))
+            with open('cwl_file', 'w') as f:
+                for line in new_lines:
+                    print(line, file=f)
 
 def tag_release_pipeline(tag: str, sign: Union[object, str], pretend: bool = False):
     tag_without_v = tag.lstrip('v')
