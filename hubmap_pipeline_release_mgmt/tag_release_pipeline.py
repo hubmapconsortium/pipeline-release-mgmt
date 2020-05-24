@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+from contextlib import contextmanager
 from pathlib import Path
 from subprocess import PIPE, run
 from typing import List, Sequence, Set, Union
@@ -16,14 +17,26 @@ class GitCommandRunner:
 
     def __call__(self, *args: Sequence[str], **subprocess_kwargs):
         command = [GIT, *args]
-        print('Running', ' '.join(command))
-        if not self.pretend:
+        command_str = ' '.join(command)
+        if self.pretend:
+            print('Would run', command_str)
+        else:
+            print('Running', command_str)
             return run(command, check=True, **subprocess_kwargs)
 
     def get_branches(self) -> Set[str]:
-        output_proc = self('branch', '-a', stdout=PIPE)
-        lines: List[bytes] = output_proc.stdout.splitlines()
+        with self.pretend_override():
+            output_proc = self('branch', '-a', stdout=PIPE)
+            lines: List[bytes] = output_proc.stdout.splitlines()
         return {line[2:].strip().decode() for line in lines}
+
+    # TODO: rethink this
+    @contextmanager
+    def pretend_override(self):
+        old_pretend = self.pretend
+        self.pretend = False
+        yield
+        self.pretend = old_pretend
 
 DO_NOT_SIGN = object()
 SIGN_WITH_DEFAULT_IDENTITY = object()
