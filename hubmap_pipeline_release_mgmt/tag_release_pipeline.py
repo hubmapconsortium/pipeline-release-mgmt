@@ -12,10 +12,14 @@ from multi_docker_build.build_docker_containers import build as build_images, re
 GIT = 'git'
 
 class GitCommandRunner:
-    def __init__(self, pretend: bool):
+    def __init__(self, pretend: bool, push: bool):
         self.pretend = pretend
+        self.should_push = push
 
     def __call__(self, *args: Sequence[str], **subprocess_kwargs):
+        if args and args[0] == 'push':
+            message = 'Use GitCommandRunner.push instead (due to special push override functionality)'
+            raise ValueError(message)
         command = [GIT, *args]
         command_str = ' '.join(command)
         if self.pretend:
@@ -23,6 +27,12 @@ class GitCommandRunner:
         else:
             print('Running', command_str)
             return run(command, check=True, **subprocess_kwargs)
+
+    def push(self, *args: Sequence[str], **subprocess_kwargs):
+        if self.should_push:
+            self('push', *args, **subprocess_kwargs)
+        else:
+            print('Would push with args', args)
 
     def get_branches(self) -> Set[str]:
         with self.pretend_override():
@@ -68,7 +78,7 @@ def adjust_dockerfile_tags(tag_without_v: str, pretend: bool = False):
 def tag_release_pipeline(tag: str, sign: Union[object, str], pretend: bool = False, push: bool = True):
     tag_without_v = tag.lstrip('v')
 
-    git = GitCommandRunner(pretend)
+    git = GitCommandRunner(pretend, push)
     git('checkout', 'master')
     git('pull', '--ff-only')
     branches = git.get_branches()
@@ -83,8 +93,7 @@ def tag_release_pipeline(tag: str, sign: Union[object, str], pretend: bool = Fal
             git('checkout', 'release')
         else:
             git('checkout', '-b', 'release')
-        if push:
-            git('push', '-u', 'origin', 'release')
+        git.push('-u', 'origin', 'release')
     git('merge', 'master')
     git('submodule', 'update', '--init', '--recursive')
     build_images(
@@ -111,12 +120,10 @@ def tag_release_pipeline(tag: str, sign: Union[object, str], pretend: bool = Fal
             ],
         )
     git('tag', tag, *tag_extra_args)
-    if push:
-        git('push')
-        git('push', '--tags')
+    git.push()
+    git.push('--tags')
     git('checkout', 'master')
-    if push:
-        git('push')
+    git.push()
 
 def main():
     p = ArgumentParser()
