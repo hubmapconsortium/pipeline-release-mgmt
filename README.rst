@@ -62,7 +62,7 @@ Options:
 --pretend   Don't run anything that would make any modifications to the
             any Git repositories or Docker images. This will still run
             ``git branch -a`` to obtain the list of Git branches, however.
-            This will print
+            This will print all commands which would be run.
 
 --sign      Sign the new tag with GPG using your default identity.
 
