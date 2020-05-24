@@ -65,13 +65,12 @@ def adjust_dockerfile_tags(tag_without_v: str, pretend: bool = False):
                 for line in new_lines:
                     print(line, file=f)
 
-def tag_release_pipeline(tag: str, sign: Union[object, str], pretend: bool = False):
+def tag_release_pipeline(tag: str, sign: Union[object, str], pretend: bool = False, push: bool = True):
     tag_without_v = tag.lstrip('v')
 
     git = GitCommandRunner(pretend)
     git('checkout', 'master')
     git('pull', '--ff-only')
-    git('push')
     branches = git.get_branches()
     if 'remotes/origin/release' in branches:
         if 'release' in branches:
@@ -84,13 +83,14 @@ def tag_release_pipeline(tag: str, sign: Union[object, str], pretend: bool = Fal
             git('checkout', 'release')
         else:
             git('checkout', '-b', 'release')
-        git('push', '-u', 'origin', 'release')
+        if push:
+            git('push', '-u', 'origin', 'release')
     git('merge', 'master')
     git('submodule', 'update', '--init', '--recursive')
     build_images(
         tag_timestamp=False,
         tag=tag,
-        push=True,
+        push=push,
         ignore_missing_submodules=False,
         pretend=pretend,
     )
@@ -108,12 +108,15 @@ def tag_release_pipeline(tag: str, sign: Union[object, str], pretend: bool = Fal
                 '-s',
                 '-u',
                 sign,
-            ]
+            ],
         )
     git('tag', tag, *tag_extra_args)
-    git('push')
-    git('push', '--tags')
+    if push:
+        git('push')
+        git('push', '--tags')
     git('checkout', 'master')
+    if push:
+        git('push')
 
 def main():
     p = ArgumentParser()
@@ -143,9 +146,23 @@ def main():
             pushing commits, building, tagging, or pushing container images).
         """,
     )
+    p.add_argument(
+        '--no-push',
+        action='store_true',
+        help="""
+            Run everything locally (switching and merging branches, making a
+            new Git tag, building Docker containers), but don't push anything
+            to Docker Hub or the Git remote repository.
+        """,
+    )
     args = p.parse_args()
 
-    tag_release_pipeline(args.tag, args.sign, args.pretend)
+    tag_release_pipeline(
+        tag=args.tag,
+        sign=args.sign,
+        pretend=args.pretend,
+        push=not args.no_push,
+    )
 
 if __name__ == '__main__':
     main()
