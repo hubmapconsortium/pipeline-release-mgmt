@@ -16,10 +16,7 @@ class GitCommandRunner:
         self.pretend = pretend
         self.should_push = push
 
-    def __call__(self, *args: Sequence[str], **subprocess_kwargs):
-        if args and args[0] == 'push':
-            message = 'Use GitCommandRunner.push instead (due to special push override functionality)'
-            raise ValueError(message)
+    def _run(self, *args: Sequence[str], **subprocess_kwargs):
         command = [GIT, *args]
         command_str = ' '.join(command)
         if self.pretend:
@@ -28,9 +25,15 @@ class GitCommandRunner:
             print('Running', command_str)
             return run(command, check=True, **subprocess_kwargs)
 
+    def __call__(self, *args: Sequence[str], **subprocess_kwargs):
+        if args and args[0] == 'push':
+            message = 'Use GitCommandRunner.push instead (due to special push override functionality)'
+            raise ValueError(message)
+        return self._run(*args, **subprocess_kwargs)
+
     def push(self, *args: Sequence[str], **subprocess_kwargs):
         if self.should_push:
-            self('push', *args, **subprocess_kwargs)
+            self._run('push', *args, **subprocess_kwargs)
         else:
             print('Would push with args', args)
 
