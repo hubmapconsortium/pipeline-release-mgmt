@@ -102,7 +102,7 @@ def tag_release_pipeline(tag: str, sign: Union[object, str], pretend: bool = Fal
     git('submodule', 'update', '--init', '--recursive')
     build_images(
         tag_timestamp=False,
-        tag=tag,
+        tag=tag_without_v,
         push=push,
         ignore_missing_submodules=False,
         pretend=pretend,
