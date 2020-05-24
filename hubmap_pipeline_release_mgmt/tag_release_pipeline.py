@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 from contextlib import contextmanager
 from pathlib import Path
-from subprocess import PIPE, run
+from subprocess import CalledProcessError, PIPE, run
 from typing import List, Sequence, Set, Union
 
 from multi_docker_build.build_docker_containers import build as build_images, read_images
@@ -80,7 +80,11 @@ def tag_release_pipeline(tag: str, sign: Union[object, str], pretend: bool = Fal
 
     git = GitCommandRunner(pretend, push)
     git('checkout', 'master')
-    git('pull', '--ff-only')
+    try:
+        git('pull', '--ff-only')
+    except CalledProcessError as e:
+        message = 'Your `master` branch and `origin/master` have divergent history'
+        raise ValueError(message) from e
     branches = git.get_branches()
     if 'remotes/origin/release' in branches:
         if 'release' in branches:
