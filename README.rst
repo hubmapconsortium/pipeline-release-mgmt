@@ -51,16 +51,16 @@ At a high level, ``tag_release_pipeline`` does:
   ``multi-docker-build`` package
 * Tag all containers as ``latest`` and with the new tag name
 * Push all Docker containers/tags to Docker Hub
-* Update all CWL files to use tagged versions of any containers built from this
-  repository (*i.e.* those listed in ``docker_images.txt``)
-* Commit the update to the CWL files
+* Update all CWL files to use tagged versions of any containers built from the
+  pipeline repository (*i.e.* those listed in ``docker_images.txt``)
+* Commit the updated CWL files
 * Tag the new commit, signed or not
 * Push the ``master`` and ``release`` branches, and the new tag
 
 Options:
 
---pretend   Don't run anything that would make any modifications to the
-            any Git repositories or Docker images. This will still run
+--pretend   Don't run anything that would make any modifications to any Git
+            repositories or Docker images. This will still run
             ``git branch -a`` to obtain the list of Git branches, however.
             This will print all commands which would be run.
 
@@ -75,5 +75,6 @@ Options:
 Requirements
 ------------
 
-Python 3.6 or newer. Version 0.3 or newer of the ``multi-docker-build``
-PyPI package (which should be installed automatically).
+* Python 3.6 or newer.
+* Version 0.3 or newer of the ``multi-docker-build`` PyPI package (which
+  should be installed automatically).
