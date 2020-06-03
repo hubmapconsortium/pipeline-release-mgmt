@@ -101,7 +101,7 @@ def tag_release_pipeline(tag: str, sign: Union[object, str], pretend: bool = Fal
         else:
             git('checkout', '-b', 'release')
         git.push('-u', 'origin', 'release')
-    git('merge', 'master')
+    git('merge', 'master', '-m', "Merge branch 'master' into release")
     git('submodule', 'update', '--init', '--recursive')
     build_images(
         tag_timestamp=False,
