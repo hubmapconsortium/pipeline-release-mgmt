@@ -26,6 +26,10 @@ and run::
 
   tag_release_pipeline v1.0
 
+Most of the script is automated, but Git will ask you for a tag message (by
+opening a text editor) unless a tag message is given as an argument to this
+script via the ``--tag-message`` argument.
+
 To sign Git tags with GPG, append ``--sign`` (and if you want to sign with
 a non-default key, add ``--sign=preferred@email.address``.)
 
@@ -63,6 +67,10 @@ Options:
             repositories or Docker images. This will still run
             ``git branch -a`` to obtain the list of Git branches, however.
             This will print all commands which would be run.
+
+--tag-message  (alias: ``-m``) Use this string as the tag message. This is
+               given to Git as the ``-m`` argument to ``git tag``, which stops
+               Git from asking for a tag message interactively.
 
 --sign      Sign the new tag with GPG using your default identity.
 
