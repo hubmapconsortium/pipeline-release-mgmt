@@ -144,6 +144,7 @@ def main():
         """,
     )
     p.add_argument(
+        '-m',
         '--tag-message',
         help="""
             Message to use for `git tag` invocation. If omitted, Git will open
