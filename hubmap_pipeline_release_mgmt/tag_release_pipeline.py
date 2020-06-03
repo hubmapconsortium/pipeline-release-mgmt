@@ -2,7 +2,7 @@ from argparse import ArgumentParser
 from contextlib import contextmanager
 from pathlib import Path
 from subprocess import CalledProcessError, PIPE, run
-from typing import List, Sequence, Set, Union
+from typing import List, Optional, Sequence, Set, Union
 
 from multi_docker_build.build_docker_containers import build as build_images, read_images
 
@@ -78,7 +78,13 @@ def adjust_dockerfile_tags(tag_without_v: str, pretend: bool = False):
                 for line in new_lines:
                     print(line, file=f)
 
-def tag_release_pipeline(tag: str, sign: Union[object, str], pretend: bool = False, push: bool = True):
+def tag_release_pipeline(
+        tag: str,
+        sign: Union[object, str],
+        tag_message: Optional[str] = None,
+        pretend: bool = False,
+        push: bool = True,
+):
     tag_without_v = tag.lstrip('v')
 
     git = GitCommandRunner(pretend, push)
@@ -119,13 +125,9 @@ def tag_release_pipeline(tag: str, sign: Union[object, str], pretend: bool = Fal
     elif sign is SIGN_WITH_DEFAULT_IDENTITY:
         tag_extra_args.append('-s')
     else:
-        tag_extra_args.extend(
-            [
-                '-s',
-                '-u',
-                sign,
-            ],
-        )
+        tag_extra_args.extend(['-s', '-u', sign])
+    if tag_message is not None:
+        tag_extra_args.extend(['-m', tag_message])
     git('tag', tag, *tag_extra_args)
     git.push()
     git.push('--tags')
@@ -139,6 +141,13 @@ def main():
         help="""
             Tag name to use, both in the pipeline Git repository and for
             any Docker images built for this pipeline.
+        """,
+    )
+    p.add_argument(
+        '--tag-message',
+        help="""
+            Message to use for `git tag` invocation. If omitted, Git will open
+            an editor and ask for a tag message.
         """,
     )
     p.add_argument(
@@ -174,6 +183,7 @@ def main():
     tag_release_pipeline(
         tag=args.tag,
         sign=args.sign,
+        tag_message=args.tag_message,
         pretend=args.pretend,
         push=not args.no_push,
     )
