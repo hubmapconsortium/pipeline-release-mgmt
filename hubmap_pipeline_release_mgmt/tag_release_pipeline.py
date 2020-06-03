@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 from contextlib import contextmanager
 from pathlib import Path
+import re
 from subprocess import CalledProcessError, PIPE, run
 from typing import List, Optional, Sequence, Set, Union
 
@@ -78,6 +79,32 @@ def adjust_dockerfile_tags(tag_without_v: str, pretend: bool = False):
                 for line in new_lines:
                     print(line, file=f)
 
+VERSION_NUMBER_PATTERN = re.compile(r'v(\d[\d\.]+.*)')
+
+def strip_v_from_version_number(tag: str) -> str:
+    """
+    :param tag: Tag name, with or without a leading 'v'
+    :return: If a numeric version, strips one leading 'v' character. Otherwise
+      `tag` is returned unchanged.
+
+    >>> strip_v_from_version_number('v0.1')
+    '0.1'
+    >>> strip_v_from_version_number('v00..00')
+    '00..00'
+    >>> strip_v_from_version_number('v1.0-rc1')
+    '1.0-rc1'
+    >>> strip_v_from_version_number('version which should not change')
+    'version which should not change'
+    >>> strip_v_from_version_number('v.00..00')
+    'v.00..00'
+    """
+    # TODO: consider requiring Python 3.8 for this
+    m = VERSION_NUMBER_PATTERN.match(tag)
+    if m:
+        return m.group(1)
+    else:
+        return tag
+
 def tag_release_pipeline(
         tag: str,
         sign: Union[object, str],
@@ -85,7 +112,7 @@ def tag_release_pipeline(
         pretend: bool = False,
         push: bool = True,
 ):
-    tag_without_v = tag.lstrip('v')
+    tag_without_v = strip_v_from_version_number(tag)
 
     git = GitCommandRunner(pretend, push)
     git('checkout', 'master')
