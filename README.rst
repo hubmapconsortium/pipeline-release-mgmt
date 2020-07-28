@@ -31,7 +31,7 @@ opening a text editor) unless a tag message is given as an argument to this
 script via the ``--tag-message`` argument.
 
 To sign Git tags with GPG, append ``--sign`` (and if you want to sign with
-a non-default key, add ``--sign=preferred@email.address``.)
+a non-default key, add ``--sign=preferred@email.address``).
 
 (Your local ``master`` branch can be behind or ahead of ``origin/master``
 -- if behind, it will be updated with ``git pull``, and if ahead
