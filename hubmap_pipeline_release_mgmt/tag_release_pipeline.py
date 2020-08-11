@@ -7,6 +7,10 @@ from typing import List, Optional, Sequence, Set, Union
 
 from multi_docker_build.build_docker_containers import build as build_images, read_images
 
+MASTER_BRANCH = 'master'
+RELEASE_BRANCH = 'release'
+REMOTE_REPOSITORY = 'origin'
+
 # TODO: consider using a package like 'gitpython' for this. It's
 #  straightforward enough to run Git like this
 
@@ -115,26 +119,29 @@ def tag_release_pipeline(
     tag_without_v = strip_v_from_version_number(tag)
 
     git = GitCommandRunner(pretend, push)
-    git('checkout', 'master')
+    git('checkout', MASTER_BRANCH)
     try:
         git('pull', '--ff-only')
     except CalledProcessError as e:
-        message = 'Your `master` branch and `origin/master` have divergent history'
+        message = (
+            f'Your `{MASTER_BRANCH}` branch and `{REMOTE_REPOSITORY}/'
+            f'{MASTER_BRANCH}` have divergent history'
+        )
         raise ValueError(message) from e
     branches = git.get_branches()
-    if 'remotes/origin/release' in branches:
-        if 'release' in branches:
-            git('checkout', 'release')
+    if f'remotes/{REMOTE_REPOSITORY}/{RELEASE_BRANCH}' in branches:
+        if RELEASE_BRANCH in branches:
+            git('checkout', RELEASE_BRANCH)
             git('pull', '--ff-only')
         else:
-            git('checkout', '-b', 'release', 'origin/release')
+            git('checkout', '-b', RELEASE_BRANCH, f'{REMOTE_REPOSITORY}/{RELEASE_BRANCH}')
     else:
-        if 'release' in branches:
-            git('checkout', 'release')
+        if RELEASE_BRANCH in branches:
+            git('checkout', RELEASE_BRANCH)
         else:
-            git('checkout', '-b', 'release')
-        git.push('-u', 'origin', 'release')
-    git('merge', 'master', '-m', "Merge branch 'master' into release")
+            git('checkout', '-b', RELEASE_BRANCH)
+        git.push('-u', REMOTE_REPOSITORY, RELEASE_BRANCH)
+    git('merge', MASTER_BRANCH, '-m', f"Merge branch '{MASTER_BRANCH}' into {RELEASE_BRANCH}")
     git('submodule', 'update', '--init', '--recursive')
     build_images(
         tag_timestamp=False,
@@ -158,7 +165,7 @@ def tag_release_pipeline(
     git('tag', tag, *tag_extra_args)
     git.push()
     git.push('--tags')
-    git('checkout', 'master')
+    git('checkout', MASTER_BRANCH)
     git.push()
 
 def main():
