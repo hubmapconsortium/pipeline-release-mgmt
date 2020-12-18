@@ -1,20 +1,22 @@
+import re
 from argparse import ArgumentParser
 from contextlib import contextmanager
 from pathlib import Path
-import re
-from subprocess import CalledProcessError, PIPE, run
+from subprocess import PIPE, CalledProcessError, run
 from typing import List, Optional, Sequence, Set, Union
 
-from multi_docker_build.build_docker_containers import build as build_images, read_images
+from multi_docker_build.build_docker_containers import build as build_images
+from multi_docker_build.build_docker_containers import read_images
 
-MASTER_BRANCH = 'master'
-RELEASE_BRANCH = 'release'
-REMOTE_REPOSITORY = 'origin'
+MASTER_BRANCH = "master"
+RELEASE_BRANCH = "release"
+REMOTE_REPOSITORY = "origin"
 
 # TODO: consider using a package like 'gitpython' for this. It's
 #  straightforward enough to run Git like this
 
-GIT = 'git'
+GIT = "git"
+
 
 class GitCommandRunner:
     def __init__(self, pretend: bool, push: bool):
@@ -23,28 +25,30 @@ class GitCommandRunner:
 
     def _run(self, *args: Sequence[str], **subprocess_kwargs):
         command = [GIT, *args]
-        command_str = ' '.join(command)
+        command_str = " ".join(command)
         if self.pretend:
-            print('Would run', command_str)
+            print("Would run", command_str)
         else:
-            print('Running', command_str)
+            print("Running", command_str)
             return run(command, check=True, **subprocess_kwargs)
 
     def __call__(self, *args: Sequence[str], **subprocess_kwargs):
-        if args and args[0] == 'push':
-            message = 'Use GitCommandRunner.push instead (due to special push override functionality)'
+        if args and args[0] == "push":
+            message = (
+                "Use GitCommandRunner.push instead (due to special push override functionality)"
+            )
             raise ValueError(message)
         return self._run(*args, **subprocess_kwargs)
 
     def push(self, *args: Sequence[str], **subprocess_kwargs):
         if self.should_push:
-            self._run('push', *args, **subprocess_kwargs)
+            self._run("push", *args, **subprocess_kwargs)
         else:
-            print('Would push with args', args)
+            print("Would push with args", args)
 
     def get_branches(self) -> Set[str]:
         with self.pretend_override():
-            output_proc = self('branch', '-a', stdout=PIPE)
+            output_proc = self("branch", "-a", stdout=PIPE)
             lines: List[bytes] = output_proc.stdout.splitlines()
         return {line[2:].strip().decode() for line in lines}
 
@@ -56,34 +60,38 @@ class GitCommandRunner:
         yield
         self.pretend = old_pretend
 
+
 DO_NOT_SIGN = object()
 SIGN_WITH_DEFAULT_IDENTITY = object()
+
 
 def adjust_dockerfile_tags(tag_without_v: str, pretend: bool = False):
     docker_images = read_images(Path())
     labels = set(label for label, path, options in docker_images)
 
-    for cwl_file in Path().glob('**/*.cwl'):
+    for cwl_file in Path().glob("**/*.cwl"):
         # Not worth parsing this as YAML. We want minimal diffs
         # between the previous version and our modifications
         lines = cwl_file.read_text().splitlines()
         new_lines = []
         for line in lines:
             line = line.rstrip()
-            if 'dockerPull' in line:
-                pieces = line.split(':', 1)
-                image = pieces[1].strip().split(':')[0].strip('"')
+            if "dockerPull" in line:
+                pieces = line.split(":", 1)
+                image = pieces[1].strip().split(":")[0].strip('"')
                 if image in labels:
-                    print('Found managed Docker image', image, 'in', cwl_file)
-                    pieces[1] = f'{image}:{tag_without_v}'
-                    line = ': '.join(pieces)
+                    print("Found managed Docker image", image, "in", cwl_file)
+                    pieces[1] = f"{image}:{tag_without_v}"
+                    line = ": ".join(pieces)
             new_lines.append(line)
         if not pretend:
-            with open(cwl_file, 'w') as f:
+            with open(cwl_file, "w") as f:
                 for line in new_lines:
                     print(line, file=f)
 
-VERSION_NUMBER_PATTERN = re.compile(r'v(\d[\d\.]+.*)')
+
+VERSION_NUMBER_PATTERN = re.compile(r"v(\d[\d\.]+.*)")
+
 
 def strip_v_from_version_number(tag: str) -> str:
     """
@@ -109,40 +117,41 @@ def strip_v_from_version_number(tag: str) -> str:
     else:
         return tag
 
+
 def tag_release_pipeline(
-        tag: str,
-        sign: Union[object, str],
-        tag_message: Optional[str] = None,
-        pretend: bool = False,
-        push: bool = True,
+    tag: str,
+    sign: Union[object, str],
+    tag_message: Optional[str] = None,
+    pretend: bool = False,
+    push: bool = True,
 ):
     tag_without_v = strip_v_from_version_number(tag)
 
     git = GitCommandRunner(pretend, push)
-    git('checkout', MASTER_BRANCH)
+    git("checkout", MASTER_BRANCH)
     try:
-        git('pull', '--ff-only')
+        git("pull", "--ff-only")
     except CalledProcessError as e:
         message = (
-            f'Your `{MASTER_BRANCH}` branch and `{REMOTE_REPOSITORY}/'
-            f'{MASTER_BRANCH}` have divergent history'
+            f"Your `{MASTER_BRANCH}` branch and `{REMOTE_REPOSITORY}/"
+            f"{MASTER_BRANCH}` have divergent history"
         )
         raise ValueError(message) from e
     branches = git.get_branches()
-    if f'remotes/{REMOTE_REPOSITORY}/{RELEASE_BRANCH}' in branches:
+    if f"remotes/{REMOTE_REPOSITORY}/{RELEASE_BRANCH}" in branches:
         if RELEASE_BRANCH in branches:
-            git('checkout', RELEASE_BRANCH)
-            git('pull', '--ff-only')
+            git("checkout", RELEASE_BRANCH)
+            git("pull", "--ff-only")
         else:
-            git('checkout', '-b', RELEASE_BRANCH, f'{REMOTE_REPOSITORY}/{RELEASE_BRANCH}')
+            git("checkout", "-b", RELEASE_BRANCH, f"{REMOTE_REPOSITORY}/{RELEASE_BRANCH}")
     else:
         if RELEASE_BRANCH in branches:
-            git('checkout', RELEASE_BRANCH)
+            git("checkout", RELEASE_BRANCH)
         else:
-            git('checkout', '-b', RELEASE_BRANCH)
-        git.push('-u', REMOTE_REPOSITORY, RELEASE_BRANCH)
-    git('merge', MASTER_BRANCH, '-m', f"Merge branch '{MASTER_BRANCH}' into {RELEASE_BRANCH}")
-    git('submodule', 'update', '--init', '--recursive')
+            git("checkout", "-b", RELEASE_BRANCH)
+        git.push("-u", REMOTE_REPOSITORY, RELEASE_BRANCH)
+    git("merge", MASTER_BRANCH, "-m", f"Merge branch '{MASTER_BRANCH}' into {RELEASE_BRANCH}")
+    git("submodule", "update", "--init", "--recursive")
     build_images(
         tag_timestamp=False,
         tag=tag_without_v,
@@ -151,43 +160,44 @@ def tag_release_pipeline(
         pretend=pretend,
     )
     adjust_dockerfile_tags(tag_without_v, pretend)
-    git('commit', '-a', '-m', f'Update container tags for {tag}')
+    git("commit", "-a", "-m", f"Update container tags for {tag}")
 
     tag_extra_args = []
     if sign is DO_NOT_SIGN:
-        tag_extra_args.append('-a')
+        tag_extra_args.append("-a")
     elif sign is SIGN_WITH_DEFAULT_IDENTITY:
-        tag_extra_args.append('-s')
+        tag_extra_args.append("-s")
     else:
-        tag_extra_args.extend(['-s', '-u', sign])
+        tag_extra_args.extend(["-s", "-u", sign])
     if tag_message is not None:
-        tag_extra_args.extend(['-m', tag_message])
-    git('tag', tag, *tag_extra_args)
+        tag_extra_args.extend(["-m", tag_message])
+    git("tag", tag, *tag_extra_args)
     git.push()
-    git.push('--tags')
-    git('checkout', MASTER_BRANCH)
+    git.push("--tags")
+    git("checkout", MASTER_BRANCH)
     git.push()
+
 
 def main():
     p = ArgumentParser()
     p.add_argument(
-        'tag',
+        "tag",
         help="""
             Tag name to use, both in the pipeline Git repository and for
             any Docker images built for this pipeline.
         """,
     )
     p.add_argument(
-        '-m',
-        '--tag-message',
+        "-m",
+        "--tag-message",
         help="""
             Message to use for `git tag` invocation. If omitted, Git will open
             an editor and ask for a tag message.
         """,
     )
     p.add_argument(
-        '--sign',
-        nargs='?',
+        "--sign",
+        nargs="?",
         default=DO_NOT_SIGN,
         const=SIGN_WITH_DEFAULT_IDENTITY,
         help="""
@@ -197,16 +207,16 @@ def main():
         """,
     )
     p.add_argument(
-        '--pretend',
-        action='store_true',
+        "--pretend",
+        action="store_true",
         help="""
             Run in pretend mode: don't actually execute anything (tagging or 
             pushing commits, building, tagging, or pushing container images).
         """,
     )
     p.add_argument(
-        '--no-push',
-        action='store_true',
+        "--no-push",
+        action="store_true",
         help="""
             Run everything locally (switching and merging branches, making a
             new Git tag, building Docker containers), but don't push anything
@@ -223,5 +233,6 @@ def main():
         push=not args.no_push,
     )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
