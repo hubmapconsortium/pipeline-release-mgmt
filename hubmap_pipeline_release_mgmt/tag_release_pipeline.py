@@ -52,6 +52,21 @@ class GitCommandRunner:
             lines: List[bytes] = output_proc.stdout.splitlines()
         return {line[2:].strip().decode() for line in lines}
 
+    def sync_master_to_release(self):
+        proc = self(
+            "commit-tree",
+            "-p",
+            RELEASE_BRANCH,
+            "-p",
+            MASTER_BRANCH,
+            "-m",
+            "Sync 'master' to 'release'",
+            "master^{tree}",
+            stdout=PIPE,
+        )
+        new_commit = proc.stdout.strip().decode("utf-8")
+        self("reset", "--hard", new_commit)
+
     # TODO: rethink this
     @contextmanager
     def pretend_override(self):
@@ -150,7 +165,7 @@ def tag_release_pipeline(
         else:
             git("checkout", "-b", RELEASE_BRANCH)
         git.push("-u", REMOTE_REPOSITORY, RELEASE_BRANCH)
-    git("merge", MASTER_BRANCH, "-m", f"Merge branch '{MASTER_BRANCH}' into {RELEASE_BRANCH}")
+    git.sync_master_to_release()
     git("submodule", "update", "--init", "--recursive")
     build_images(
         tag_timestamp=False,
