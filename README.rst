@@ -54,15 +54,16 @@ At a high level, ``tag_release_pipeline`` does:
 
 * Checkout the ``master`` branch, pull/push so it and ``origin/master`` match
 * Checkout or create a ``release`` branch
-* Merge ``master`` into ``release``
+* Sync ``master`` to ``release`` -- note that this is *not* a merge; the previous
+  contents of the ``release`` branch are overwritten entirely
 * Update the content of all submodules to match the versions committed in ``master``
-* Build all Docker containers in ``docker_images.txt``, using the
+* Build all Docker images in ``docker_images.txt``, using the
   ``multi-docker-build`` package
 * Tag all containers as ``latest`` and with the new tag name
 * Push all Docker containers/tags to Docker Hub
 * Update all CWL files to use tagged versions of any containers built from the
   pipeline repository (*i.e.* those listed in ``docker_images.txt``)
-* Commit the updated CWL files
+* Commit the updated CWL files (on the ``release`` branch)
 * Tag the new commit, signed or not
 * Push the ``master`` and ``release`` branches, and the new tag
 
