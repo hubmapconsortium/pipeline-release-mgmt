@@ -23,7 +23,7 @@ Usage
 
 Once the package is installed, navigate to a repository containing a
 pipeline, and ensure that the ``master`` branch is what you would like
-to release as a new tagged version (including the state of any
+to release as a new tagged version (including the *committed* state of any
 submodules).
 
 Choose a new version number (preferably starting with ``v``), like ``v1.0``,
@@ -53,15 +53,16 @@ if preparing a release version of a pipeline).
 At a high level, ``tag_release_pipeline`` does:
 
 * Checkout the ``master`` branch, pull/push so it and ``origin/master`` match
-* Checkout or create a ``release`` branch
+* Checkout or create a ``release`` branch, ``git pull --ff-only`` if checking out
+  a local branch that already exists
 * Sync ``master`` to ``release`` -- note that this is *not* a merge; the previous
   contents of the ``release`` branch are overwritten entirely
 * Update the content of all submodules to match the versions committed in ``master``
 * Build all Docker images in ``docker_images.txt``, using the
   ``multi-docker-build`` package
-* Tag all containers as ``latest`` and with the new tag name
-* Push all Docker containers/tags to Docker Hub
-* Update all CWL files to use tagged versions of any containers built from the
+* Tag all images as ``latest`` and with the new tag name
+* Push all Docker images/tags to Docker Hub
+* Update all CWL files to use tagged versions of any images built from the
   pipeline repository (*i.e.* those listed in ``docker_images.txt``)
 * Commit the updated CWL files (on the ``release`` branch)
 * Tag the new commit, signed or not
