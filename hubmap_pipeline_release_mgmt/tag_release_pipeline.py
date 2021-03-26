@@ -61,7 +61,7 @@ class GitCommandRunner:
             MAIN_BRANCH,
             "-m",
             f"Sync '{MAIN_BRANCH}' to '{RELEASE_BRANCH}'",
-            f"f{MAIN_BRANCH}^{{tree}}",
+            f"{MAIN_BRANCH}^{{tree}}",
             stdout=PIPE,
         )
         new_commit = proc.stdout.strip().decode("utf-8")
