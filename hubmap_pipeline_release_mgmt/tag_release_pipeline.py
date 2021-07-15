@@ -1,4 +1,5 @@
 import re
+import shlex
 from argparse import ArgumentParser
 from contextlib import contextmanager
 from pathlib import Path
@@ -25,7 +26,8 @@ class GitCommandRunner:
 
     def _run(self, *args: Sequence[str], **subprocess_kwargs):
         command = [GIT, *args]
-        command_str = " ".join(command)
+        # TODO: use shlex.join when dropping support for Python < 3.8
+        command_str = " ".join(shlex.quote(c) for c in command)
         if self.pretend:
             print("Would run", command_str)
         else:
