@@ -82,10 +82,11 @@ DO_NOT_SIGN = object()
 SIGN_WITH_DEFAULT_IDENTITY = object()
 
 
-def adjust_dockerfile_tags(tag_without_v: str, pretend: bool = False):
+def adjust_dockerfile_tags(tag_without_v: str, pretend: bool = False) -> bool:
     docker_images = read_images(Path())
     labels = set(label for label, path, options in docker_images)
 
+    adjustment_performed = False
     for cwl_file in Path().glob("**/*.cwl"):
         # Not worth parsing this as YAML. We want minimal diffs
         # between the previous version and our modifications
@@ -98,6 +99,7 @@ def adjust_dockerfile_tags(tag_without_v: str, pretend: bool = False):
                 image = pieces[1].strip().split(":")[0].strip('"')
                 if image in labels:
                     print("Found managed Docker image", image, "in", cwl_file)
+                    adjustment_performed = True
                     pieces[1] = f"{image}:{tag_without_v}"
                     line = ": ".join(pieces)
             new_lines.append(line)
@@ -105,6 +107,8 @@ def adjust_dockerfile_tags(tag_without_v: str, pretend: bool = False):
             with open(cwl_file, "w") as f:
                 for line in new_lines:
                     print(line, file=f)
+
+    return adjustment_performed
 
 
 VERSION_NUMBER_PATTERN = re.compile(r"v(\d[\d\.]+.*)")
@@ -176,8 +180,8 @@ def tag_release_pipeline(
         ignore_missing_submodules=False,
         pretend=pretend,
     )
-    adjust_dockerfile_tags(tag_without_v, pretend)
-    git("commit", "-a", "-m", f"Update container tags for {tag}")
+    if adjust_dockerfile_tags(tag_without_v, pretend):
+        git("commit", "-a", "-m", f"Update container tags for {tag}")
 
     tag_extra_args = []
     if sign is DO_NOT_SIGN:
