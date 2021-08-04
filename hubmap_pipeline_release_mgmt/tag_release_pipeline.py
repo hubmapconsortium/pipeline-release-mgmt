@@ -9,9 +9,9 @@ from typing import List, Optional, Sequence, Set, Union
 from multi_docker_build.build_docker_containers import build as build_images
 from multi_docker_build.build_docker_containers import read_images
 
-MAIN_BRANCH = "master"
-RELEASE_BRANCH = "release"
-REMOTE_REPOSITORY = "origin"
+DEFAULT_MAIN_BRANCH = "master"
+DEFAULT_RELEASE_BRANCH = "release"
+DEFAULT_REMOTE_REPOSITORY = "origin"
 
 # TODO: consider using a package like 'gitpython' for this. It's
 #  straightforward enough to run Git like this
@@ -20,9 +20,11 @@ GIT = "git"
 
 
 class GitCommandRunner:
-    def __init__(self, pretend: bool, push: bool):
+    def __init__(self, pretend: bool, push: bool, main_branch: str, release_branch: str):
         self.pretend = pretend
         self.should_push = push
+        self.main_branch = main_branch
+        self.release_branch = release_branch
 
     def _run(self, *args: Sequence[str], **subprocess_kwargs):
         command = [GIT, *args]
@@ -58,12 +60,12 @@ class GitCommandRunner:
         proc = self(
             "commit-tree",
             "-p",
-            RELEASE_BRANCH,
+            self.release_branch,
             "-p",
-            MAIN_BRANCH,
+            self.main_branch,
             "-m",
-            f"Sync '{MAIN_BRANCH}' to '{RELEASE_BRANCH}'",
-            f"{MAIN_BRANCH}^{{tree}}",
+            f"Sync '{self.main_branch}' to '{self.release_branch}'",
+            f"{self.main_branch}^{{tree}}",
             stdout=PIPE,
         )
         new_commit = proc.stdout.strip().decode("utf-8")
@@ -142,35 +144,38 @@ def strip_v_from_version_number(tag: str) -> str:
 def tag_release_pipeline(
     tag: str,
     sign: Union[object, str],
+    remote_repository: str,
+    main_branch: str,
+    release_branch: str,
     tag_message: Optional[str] = None,
     pretend: bool = False,
     push: bool = True,
 ):
     tag_without_v = strip_v_from_version_number(tag)
 
-    git = GitCommandRunner(pretend, push)
-    git("checkout", MAIN_BRANCH)
+    git = GitCommandRunner(pretend, push, main_branch=main_branch, release_branch=release_branch)
+    git("checkout", main_branch)
     try:
         git("pull", "--ff-only")
     except CalledProcessError as e:
         message = (
-            f"Your `{MAIN_BRANCH}` branch and `{REMOTE_REPOSITORY}/"
-            f"{MAIN_BRANCH}` have divergent history"
+            f"Your `{main_branch}` branch and `{remote_repository}/"
+            f"{main_branch}` have divergent history"
         )
         raise ValueError(message) from e
     branches = git.get_branches()
-    if f"remotes/{REMOTE_REPOSITORY}/{RELEASE_BRANCH}" in branches:
-        if RELEASE_BRANCH in branches:
-            git("checkout", RELEASE_BRANCH)
+    if f"remotes/{remote_repository}/{release_branch}" in branches:
+        if release_branch in branches:
+            git("checkout", release_branch)
             git("pull", "--ff-only")
         else:
-            git("checkout", "-b", RELEASE_BRANCH, f"{REMOTE_REPOSITORY}/{RELEASE_BRANCH}")
+            git("checkout", "-b", release_branch, f"{remote_repository}/{release_branch}")
     else:
-        if RELEASE_BRANCH in branches:
-            git("checkout", RELEASE_BRANCH)
+        if release_branch in branches:
+            git("checkout", release_branch)
         else:
-            git("checkout", "-b", RELEASE_BRANCH)
-        git.push("-u", REMOTE_REPOSITORY, RELEASE_BRANCH)
+            git("checkout", "-b", release_branch)
+        git.push("-u", remote_repository, release_branch)
     git.sync_main_to_release()
     git("submodule", "update", "--init", "--recursive")
     build_images(
@@ -195,7 +200,7 @@ def tag_release_pipeline(
     git("tag", tag, *tag_extra_args)
     git.push()
     git.push("--tags")
-    git("checkout", MAIN_BRANCH)
+    git("checkout", main_branch)
     git.push()
 
 
@@ -244,11 +249,27 @@ def main():
             to Docker Hub or the Git remote repository.
         """,
     )
+    p.add_argument(
+        "--main-branch", default=DEFAULT_MAIN_BRANCH, help="Main branch name (master, main, etc.),"
+    )
+    p.add_argument(
+        "--release-branch",
+        default=DEFAULT_RELEASE_BRANCH,
+        help="Release branch name",
+    )
+    p.add_argument(
+        "--remote-repository",
+        default=DEFAULT_REMOTE_REPOSITORY,
+        help="Remote repository name",
+    )
     args = p.parse_args()
 
     tag_release_pipeline(
         tag=args.tag,
         sign=args.sign,
+        remote_repository=args.remote_repository,
+        main_branch=args.main_branch,
+        release_branch=args.release_branch,
         tag_message=args.tag_message,
         pretend=args.pretend,
         push=not args.no_push,
