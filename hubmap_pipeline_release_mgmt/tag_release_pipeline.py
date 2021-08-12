@@ -6,8 +6,8 @@ from pathlib import Path
 from subprocess import PIPE, CalledProcessError, run
 from typing import List, Optional, Sequence, Set, Union
 
-from multi_docker_build.build_docker_containers import build as build_images
-from multi_docker_build.build_docker_containers import read_images
+from multi_docker_build.build_docker_images import build as build_images
+from multi_docker_build.build_docker_images import read_images
 
 DEFAULT_MAIN_BRANCH = "master"
 DEFAULT_RELEASE_BRANCH = "release"
@@ -113,7 +113,7 @@ def adjust_dockerfile_tags(tag_without_v: str, pretend: bool = False) -> bool:
     return adjustment_performed
 
 
-VERSION_NUMBER_PATTERN = re.compile(r"v(\d[\d\.]+.*)")
+VERSION_NUMBER_PATTERN = re.compile(r"v(\d[\d.]+.*)")
 
 
 def strip_v_from_version_number(tag: str) -> str:
@@ -178,15 +178,16 @@ def tag_release_pipeline(
         git.push("-u", remote_repository, release_branch)
     git.sync_main_to_release()
     git("submodule", "update", "--init", "--recursive")
+    if adjust_dockerfile_tags(tag_without_v, pretend):
+        git("commit", "-a", "-m", f"Update container tags for {tag}")
     build_images(
         tag_timestamp=False,
+        tag_git_describe=False,
         tag=tag_without_v,
         push=push,
         ignore_missing_submodules=False,
         pretend=pretend,
     )
-    if adjust_dockerfile_tags(tag_without_v, pretend):
-        git("commit", "-a", "-m", f"Update container tags for {tag}")
 
     tag_extra_args = []
     if sign is DO_NOT_SIGN:
