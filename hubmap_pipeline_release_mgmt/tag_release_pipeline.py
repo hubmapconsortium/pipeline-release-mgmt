@@ -180,14 +180,6 @@ def tag_release_pipeline(
     git("submodule", "update", "--init", "--recursive")
     if adjust_dockerfile_tags(tag_without_v, pretend):
         git("commit", "-a", "-m", f"Update container tags for {tag}")
-    build_images(
-        tag_timestamp=False,
-        tag_git_describe=False,
-        tag=tag_without_v,
-        push=push,
-        ignore_missing_submodules=False,
-        pretend=pretend,
-    )
 
     tag_extra_args = []
     if sign is DO_NOT_SIGN:
@@ -199,6 +191,16 @@ def tag_release_pipeline(
     if tag_message is not None:
         tag_extra_args.extend(["-m", tag_message])
     git("tag", tag, *tag_extra_args)
+
+    build_images(
+        tag_timestamp=False,
+        tag_git_describe=False,
+        tag=tag_without_v,
+        push=push,
+        ignore_missing_submodules=False,
+        pretend=pretend,
+    )
+
     git.push()
     git.push("--tags")
     git("checkout", main_branch)
