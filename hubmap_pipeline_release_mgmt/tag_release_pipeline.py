@@ -101,7 +101,7 @@ def adjust_dockerfile_tags(tag_without_v: str, pretend: bool = False) -> bool:
                 image = pieces[1].strip().split(":")[0].strip('"')
                 if image in labels:
                     print("Found managed Docker image", image, "in", cwl_file)
-                    adjustment_performed = True
+                    adjustment_performed |= True
                     pieces[1] = f"{image}:{tag_without_v}"
                     line = ": ".join(pieces)
             new_lines.append(line)
