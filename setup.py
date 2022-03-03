@@ -31,6 +31,7 @@ setup(
     keywords="docker automation",
     packages=find_packages(),
     install_requires=[
+        "confuse",
         "multi-docker-build>=0.7.1",
     ],
     python_requires=">=3.6",

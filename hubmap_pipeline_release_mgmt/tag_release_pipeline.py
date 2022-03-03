@@ -6,17 +6,28 @@ from pathlib import Path
 from subprocess import PIPE, CalledProcessError, run
 from typing import List, Optional, Sequence, Set, Union
 
+import confuse
 from multi_docker_build.build_docker_images import build as build_images
 from multi_docker_build.build_docker_images import read_images
-
-DEFAULT_MAIN_BRANCH = "master"
-DEFAULT_RELEASE_BRANCH = "release"
-DEFAULT_REMOTE_REPOSITORY = "origin"
 
 # TODO: consider using a package like 'gitpython' for this. It's
 #  straightforward enough to run Git like this
 
 GIT = "git"
+
+
+def read_configuration():
+    config = confuse.Configuration("hubmap_pipeline_release_mgmt", __name__)
+    pipeline_config = Path("pipeline_release_mgmt.yaml")
+    if pipeline_config.is_file():
+        config.set(
+            confuse.YamlSource(
+                pipeline_config,
+                base_for_paths=True,
+                loader=config.loader,
+            )
+        )
+    return config
 
 
 class GitCommandRunner:
@@ -208,6 +219,8 @@ def tag_release_pipeline(
 
 
 def main():
+    config = read_configuration()
+
     p = ArgumentParser()
     p.add_argument(
         "tag",
@@ -253,19 +266,28 @@ def main():
         """,
     )
     p.add_argument(
-        "--main-branch", default=DEFAULT_MAIN_BRANCH, help="Main branch name (master, main, etc.),"
+        "--main-branch",
+        default=config["main_branch"].get(),
+        help="Main branch name (master, main, etc.)",
     )
     p.add_argument(
         "--release-branch",
-        default=DEFAULT_RELEASE_BRANCH,
+        default=config["release_branch"].get(),
         help="Release branch name",
     )
     p.add_argument(
         "--remote-repository",
-        default=DEFAULT_REMOTE_REPOSITORY,
+        default=config["remote_repository"].get(),
         help="Remote repository name",
     )
     args = p.parse_args()
+
+    # TODO: clean up config vs. command-line overriding with this
+    config_sign = config["sign"].get()
+    if config_sign is True and args.sign is DO_NOT_SIGN:
+        args.sign = SIGN_WITH_DEFAULT_IDENTITY
+    elif isinstance(config_sign, str):
+        args.sign = config_sign
 
     tag_release_pipeline(
         tag=args.tag,
