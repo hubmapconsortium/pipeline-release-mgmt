@@ -9,7 +9,7 @@ with open(here / "README.rst", encoding="utf-8") as f:
 
 setup(
     name="hubmap-pipeline-release-mgmt",
-    version="0.5",
+    version="0.5.1",
     description="Management scripts for releasing HuBMAP computational pipelines",
     long_description=long_description,
     long_description_content_type="text/x-rst",
@@ -30,6 +30,7 @@ setup(
     ],
     keywords="docker automation",
     packages=find_packages(),
+    package_data={"": ["*.yaml"]},
     install_requires=[
         "confuse",
         "multi-docker-build>=0.7.1",
