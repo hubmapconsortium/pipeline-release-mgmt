@@ -40,10 +40,10 @@ script via the ``--tag-message`` argument.
 To sign Git tags with GPG, append ``--sign`` (and if you want to sign with
 a non-default key, add ``--sign=preferred@email.address``).
 
-(Your local ``master`` branch can be behind or ahead of ``origin/master``
+(Your local main branch can be behind or ahead of its remote version
 -- if behind, it will be updated with ``git pull``, and if ahead
-``origin/master`` will be updated with ``git push``. Your ``master`` branch
-and ``origin/master`` cannot have *diverged*, however; ``tag_release_pipeline``
+the remote branch will be updated with ``git push``. Your main branch
+and its remote version cannot have *diverged*, however; ``tag_release_pipeline``
 will abort if this is the case.)
 
 The ``tag_release_pipeline`` script makes several assumptions about the state
@@ -117,11 +117,12 @@ This configuration can be overridden globally (affecting all usage of this
 package) and separately for each repository. These configuration parameters
 are read in this order, with each source overriding earlier ones:
 
-1. Global (user) configuration from ``.config/hubmap_pipeline_release_mgmt/config.yaml``
+1. Package default configuration shown above
+2. Global (user) configuration from ``.config/hubmap_pipeline_release_mgmt/config.yaml``
    (on Linux)
-2. Pipeline configuration options, from ``pipeline_release_mgmt.yaml`` in the
+3. Pipeline configuration options, from ``pipeline_release_mgmt.yaml`` in the
    base directory of the pipeline repository
-3. Command-line arguments passed to the ``tag_release_pipeline`` script
+4. Command-line arguments passed to the ``tag_release_pipeline`` script
 
 For example, to sign all Git tags by default with a specific GPG key, you could
 create the user configuration file noted above, containing::
