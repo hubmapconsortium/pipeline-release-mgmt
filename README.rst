@@ -133,6 +133,12 @@ The default ``main_branch`` of ``master`` is likely to change in the near future
 Requirements
 ------------
 
-* Python 3.6 or newer.
+Python 3.6 or newer.
+
+The following package dependencies should be automatically installed when
+installing via ``pip`` or ``python setup.py install``:
+
 * Version 0.7.1 or newer of the ``multi-docker-build`` PyPI package (which
   should be installed automatically).
+* `confuse <https://confuse.readthedocs.io/en/latest/>`_, (recent) version
+  unimportant
