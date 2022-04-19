@@ -118,7 +118,7 @@ package) and separately for each repository. These configuration parameters
 are read in this order, with each source overriding earlier ones:
 
 1. Package default configuration shown above
-2. Global (user) configuration from ``.config/hubmap_pipeline_release_mgmt/config.yaml``
+2. Global (user) configuration from ``~/.config/hubmap_pipeline_release_mgmt/config.yaml``
    (on Linux)
 3. Pipeline configuration options, from ``pipeline_release_mgmt.yaml`` in the
    base directory of the pipeline repository
@@ -139,7 +139,6 @@ Python 3.6 or newer.
 The following package dependencies should be automatically installed when
 installing via ``pip`` or ``python setup.py install``:
 
-* Version 0.7.1 or newer of the ``multi-docker-build`` PyPI package (which
-  should be installed automatically).
+* Version 0.7.1 or newer of the ``multi-docker-build`` PyPI package
 * `confuse <https://confuse.readthedocs.io/en/latest/>`_, (recent) version
   unimportant
