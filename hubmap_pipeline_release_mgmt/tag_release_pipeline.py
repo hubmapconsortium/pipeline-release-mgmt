@@ -95,7 +95,7 @@ DO_NOT_SIGN = object()
 SIGN_WITH_DEFAULT_IDENTITY = object()
 
 
-def adjust_dockerfile_tags(tag_without_v: str, pretend: bool = False) -> bool:
+def adjust_cwl_docker_tags(tag_without_v: str, pretend: bool = False) -> bool:
     docker_images = read_images(Path())
     labels = set(label for label, path, options in docker_images)
 
@@ -189,7 +189,7 @@ def tag_release_pipeline(
         git.push("-u", remote_repository, release_branch)
     git.sync_main_to_release()
     git("submodule", "update", "--init", "--recursive")
-    if adjust_dockerfile_tags(tag_without_v, pretend):
+    if adjust_cwl_docker_tags(tag_without_v, pretend):
         git("commit", "-a", "-m", f"Update container tags for {tag}")
 
     tag_extra_args = []
@@ -299,6 +299,15 @@ def main():
         pretend=args.pretend,
         push=not args.no_push,
     )
+
+
+def adjust_cwl_docker_tags_main():
+    p = ArgumentParser()
+    p.add_argument("tag")
+    p.add_argument("--pretend", action="store_true")
+    args = p.parse_args()
+
+    adjust_cwl_docker_tags(strip_v_from_version_number(args.tag), args.pretend)
 
 
 if __name__ == "__main__":

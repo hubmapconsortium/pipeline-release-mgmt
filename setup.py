@@ -40,6 +40,7 @@ setup(
     entry_points={
         "console_scripts": [
             "tag_release_pipeline=hubmap_pipeline_release_mgmt.tag_release_pipeline:main",
+            "adjust_cwl_docker_tags=hubmap_pipeline_release_mgmt.tag_release_pipeline:adjust_cwl_docker_tags_main",
         ],
     },
 )
