@@ -9,7 +9,7 @@ with open(here / "README.rst", encoding="utf-8") as f:
 
 setup(
     name="hubmap-pipeline-release-mgmt",
-    version="0.5.1",
+    version="0.6",
     description="Management scripts for releasing HuBMAP computational pipelines",
     long_description=long_description,
     long_description_content_type="text/x-rst",
