@@ -8,7 +8,7 @@ from typing import List, Optional, Sequence, Set, Union
 
 import confuse
 from multi_docker_build.build_docker_images import build as build_images
-from multi_docker_build.build_docker_images import read_images
+from multi_docker_build.build_docker_images import get_git_info, read_images
 
 # TODO: consider using a package like 'gitpython' for this. It's
 #  straightforward enough to run Git like this
@@ -303,9 +303,12 @@ def main():
 
 def adjust_cwl_docker_tags_main():
     p = ArgumentParser()
-    p.add_argument("tag")
+    p.add_argument("--tag")
     p.add_argument("--pretend", action="store_true")
     args = p.parse_args()
+
+    if args.tag is None:
+        args.tag = get_git_info(Path())["version"]
 
     adjust_cwl_docker_tags(strip_v_from_version_number(args.tag), args.pretend)
 
