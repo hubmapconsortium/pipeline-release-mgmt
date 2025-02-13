@@ -95,8 +95,10 @@ DO_NOT_SIGN = object()
 SIGN_WITH_DEFAULT_IDENTITY = object()
 
 
-def adjust_cwl_docker_tags(tag_without_v: str, pretend: bool = False) -> bool:
-    docker_images = read_images(Path())
+def adjust_cwl_docker_tags(
+    tag_without_v: str, pretend: bool = False, base_dir: Path = Path()
+) -> bool:
+    docker_images = read_images(base_dir)
     labels = set(label for label, path, options in docker_images)
 
     adjustment_performed = False
